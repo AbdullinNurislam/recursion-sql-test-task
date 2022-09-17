@@ -1,6 +1,6 @@
-import argparse
+from parser import parse
 from sql.create_db import create_db
-from sql.scripts import CompanyStructure
+from sql.scripts import create_table, fill_table, get_child_of_parents
 
 
 def parse_json(filename='data.json'):
@@ -11,49 +11,38 @@ def parse_json(filename='data.json'):
     return data
 
 
-def prepare_table(company_structure):
+def prepare_table():
     """
     Создаём таблицу, если её нет в бд, и заполняем её данными
     """
-    company_structure.create_table()
+    create_table()
     data = parse_json()
-    company_structure.fill_table(data=data)
+    fill_table(data=data)
 
 
-def build():
+def build(args):
     """
     Создаём БД, если её нет, и подготавливаем таблицу company_structure для дальнейшей работы с ней
     """
     create_db()
-    company_structure = CompanyStructure()
-    prepare_table(company_structure)
+    prepare_table()
+
+
+def get_employees(args):
+    if args.employee_id:
+        employees = get_child_of_parents(args.employee_id)
+        print(f'Список сотрудников:\n{", ".join(employees)}')
+    else:
+        print('Please enter value for employee_id')
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Hierarchical retrieval",
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument(
-        "action",
-        help='''choose from next values: "build", "employees".
-        "build" - creating database with table and fill by data from json.
-        "employees" - get list of employees in office by employee_id.'''
-    )
-    parser.add_argument(
-        '--employee_id',
-        type=int,
-        default=None,
-        help='provide an integer (default: None)'
-    )
-    args = parser.parse_args()
-
-    if args.action == 'build':
-        build()
-    elif args.action == 'employees':
-        if args.employee_id:
-            company_structure = CompanyStructure()
-            employees = company_structure.get_child_of_parents(args.employee_id)
-            print(f'Список сотрудников:\n{", ".join(employees)}')
-        else:
-            print('Please enter value for employee_id')
+    actions = {
+        'build': build,
+        'employees': get_employees
+    }
+    args = parse()
+    if actions.get(args.action, None):
+        actions[args.action](args)
     else:
         print('Incorrect value of argument "action"')

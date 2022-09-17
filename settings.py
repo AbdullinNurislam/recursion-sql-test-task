@@ -1,4 +1,4 @@
-DEFAULT_DB = {
+USER_MODE_PARAMS = {
     'user': 'postgres',
     'password': '',
     'host': '127.0.0.1',
@@ -6,4 +6,10 @@ DEFAULT_DB = {
     'database': 'postgres_db_test',
 }
 # Пароль пользователя "postgres" для подключения к СУБД. Необходим для создания БД от имени пользователя postgres
-POSTGRES_PASSWORD = ''
+ADMIN_MODE_PARAMS = {
+    'user': 'postgres',
+    'password': '',
+    'host': '127.0.0.1',
+    'port': 5435,
+}
+EMPLOYEE_TABLE_NAME = 'company_structure'

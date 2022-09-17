@@ -1,34 +1,17 @@
-from settings import DEFAULT_DB, POSTGRES_PASSWORD
-import psycopg2
-from psycopg2 import Error
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+from settings import ADMIN_MODE_PARAMS, USER_MODE_PARAMS
+from db_connector import FetchOneConnector, CommitConnector
 
 
 def create_db():
     """От имени пользователя postgres создаём базу, если её нет"""
-    connection = None
-    try:
-        connection = psycopg2.connect(user='postgres',
-                                      # пароль, который указали при установке PostgreSQL
-                                      password=POSTGRES_PASSWORD,
-                                      host=DEFAULT_DB['host'],
-                                      port=DEFAULT_DB['port'])
-        connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        cursor = connection.cursor()
+    db_exist_query = f"SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{USER_MODE_PARAMS['database']}'"
+    exists = FetchOneConnector(ADMIN_MODE_PARAMS).execute(db_exist_query)
 
-        cursor.execute(f"SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{DEFAULT_DB['database']}'")
-        exists = cursor.fetchone()
-        if not exists:
-            print(f'БД "{DEFAULT_DB["database"]}" не существует, создадим  её')
-            cursor.execute(f'CREATE DATABASE {DEFAULT_DB["database"]}')
-            cursor.execute(f'GRANT ALL PRIVILEGES ON DATABASE {DEFAULT_DB["database"]} TO "{DEFAULT_DB["user"]}";')
-        else:
-            print(f'БД "{DEFAULT_DB["database"]}" уже существует')
-
-    except (Exception, Error) as error:
-        print('Ошибка при работе с PostgreSQL', error)
-    finally:
-        if connection:
-            cursor.close()
-            connection.close()
-            print('Соединение с PostgreSQL закрыто')
+    if not exists:
+        print(f'БД "{USER_MODE_PARAMS["database"]}" не существует, создадим  её')
+        CommitConnector(ADMIN_MODE_PARAMS).execute(f'CREATE DATABASE {USER_MODE_PARAMS["database"]}')
+        CommitConnector(ADMIN_MODE_PARAMS).execute(
+            f'GRANT ALL PRIVILEGES ON DATABASE {USER_MODE_PARAMS["database"]} TO "{USER_MODE_PARAMS["user"]}";'
+        )
+    else:
+        print(f'БД "{USER_MODE_PARAMS["database"]}" уже существует')
